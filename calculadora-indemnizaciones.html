@@ -52,18 +52,18 @@
   }
 
   .card-header h1 {
-    font-size: 1.25rem;
+    font-size: 1.6rem;
     font-weight: 700;
     letter-spacing: -.02em;
   }
 
   .card-header p {
     margin-top: 4px;
-    font-size: .875rem;
+    font-size: 1rem;
     opacity: .85;
   }
 
-  .card-body { padding: 24px 28px; }
+  .card-body { padding: 28px 32px; }
 
   /* ── Tabs ── */
   .tabs {
@@ -74,11 +74,11 @@
   }
 
   .tab-btn {
-    padding: 7px 14px;
+    padding: 9px 16px;
     border-radius: 20px;
     border: 1.5px solid var(--border);
     background: var(--bg);
-    font-size: .8rem;
+    font-size: 1rem;
     font-weight: 500;
     color: var(--text-muted);
     cursor: pointer;
@@ -100,8 +100,8 @@
     background: var(--primary-light);
     border-left: 3px solid var(--primary);
     border-radius: 0 var(--radius) var(--radius) 0;
-    padding: 10px 14px;
-    font-size: .8rem;
+    padding: 12px 16px;
+    font-size: 1rem;
     color: var(--primary-dark);
     margin-bottom: 20px;
     line-height: 1.5;
@@ -118,7 +118,7 @@
   .form-group.full { grid-column: 1 / -1; }
 
   label {
-    font-size: .8rem;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--text);
   }
@@ -126,17 +126,17 @@
   label span.hint {
     font-weight: 400;
     color: var(--text-muted);
-    font-size: .75rem;
+    font-size: .875rem;
     margin-left: 4px;
   }
 
   input[type="date"],
   input[type="number"],
   select {
-    padding: 9px 12px;
+    padding: 11px 14px;
     border: 1.5px solid var(--border);
     border-radius: var(--radius);
-    font-size: .875rem;
+    font-size: 1.05rem;
     color: var(--text);
     background: var(--bg);
     transition: border-color .15s, box-shadow .15s;
@@ -168,7 +168,7 @@
     color: #fff;
     border: none;
     border-radius: var(--radius);
-    font-size: .95rem;
+    font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
     transition: background .15s, transform .1s;
@@ -190,7 +190,7 @@
   .result.show { display: block; }
 
   .result-title {
-    font-size: .8rem;
+    font-size: .9rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .05em;
@@ -199,7 +199,7 @@
   }
 
   .result-amount {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 800;
     color: var(--success);
     letter-spacing: -.03em;
@@ -218,7 +218,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: .825rem;
+    font-size: 1rem;
   }
 
   .breakdown-row .lbl { color: var(--text-muted); }
@@ -243,7 +243,7 @@
   /* ── Legal note ── */
   .legal-note {
     margin-top: 16px;
-    font-size: .72rem;
+    font-size: .85rem;
     color: var(--text-muted);
     line-height: 1.5;
   }
@@ -610,6 +610,23 @@
     document.getElementById('result').classList.add('show');
   }
 
+})();
+</script>
+
+<script>
+/* Envía la altura real del documento al iframe padre para evitar scroll */
+(function(){
+  function sendHeight(){
+    var h = document.documentElement.scrollHeight;
+    window.parent.postMessage({ iframeHeight: h }, '*');
+  }
+  /* Observar cambios de tamaño (cuando aparece el resultado) */
+  if(window.ResizeObserver){
+    new ResizeObserver(sendHeight).observe(document.body);
+  } else {
+    window.addEventListener('load', sendHeight);
+    setInterval(sendHeight, 500);
+  }
 })();
 </script>
 </body>
