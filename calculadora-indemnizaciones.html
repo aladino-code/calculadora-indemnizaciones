@@ -27,13 +27,13 @@
 
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #f3f4f6;
-    min-height: 100vh;
+    background: #ffffff;
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding: 24px 16px;
+    padding: 16px;
     color: var(--text);
+    overflow: hidden;
   }
 
   .card {
@@ -613,21 +613,6 @@
 })();
 </script>
 
-<script>
-/* Envía la altura real del documento al iframe padre para evitar scroll */
-(function(){
-  function sendHeight(){
-    var h = document.documentElement.scrollHeight;
-    window.parent.postMessage({ iframeHeight: h }, '*');
-  }
-  /* Observar cambios de tamaño (cuando aparece el resultado) */
-  if(window.ResizeObserver){
-    new ResizeObserver(sendHeight).observe(document.body);
-  } else {
-    window.addEventListener('load', sendHeight);
-    setInterval(sendHeight, 500);
-  }
-})();
-</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/iframe-resizer/4.3.9/iframeResizer.contentWindow.min.js"></script>
 </body>
 </html>
