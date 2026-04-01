@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Indemnizaciones Laborales</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #1a56db;
+    --primary-dark: #1e429f;
+    --primary-light: #ebf0ff;
+    --success: #057a55;
+    --success-bg: #f3faf7;
+    --warning: #c27803;
+    --warning-bg: #fdf6b2;
+    --border: #d1d5db;
+    --text: #111827;
+    --text-muted: #6b7280;
+    --bg: #ffffff;
+    --bg-soft: #f9fafb;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -2px rgba(0,0,0,.05);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f3f4f6;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px;
+    color: var(--text);
+  }
+
+  .card {
+    background: var(--bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 680px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    padding: 24px 28px;
+    color: #fff;
+  }
+
+  .card-header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+
+  .card-header p {
+    margin-top: 4px;
+    font-size: .875rem;
+    opacity: .85;
+  }
+
+  .card-body { padding: 24px 28px; }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+
+  .tab-btn {
+    padding: 7px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+  .tab-btn.active {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* ── Info box ── */
+  .info-box {
+    background: var(--primary-light);
+    border-left: 3px solid var(--primary);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    padding: 10px 14px;
+    font-size: .8rem;
+    color: var(--primary-dark);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+
+  /* ── Form ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  label span.hint {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: .75rem;
+    margin-left: 4px;
+  }
+
+  input[type="date"],
+  input[type="number"],
+  select {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    font-size: .875rem;
+    color: var(--text);
+    background: var(--bg);
+    transition: border-color .15s, box-shadow .15s;
+    width: 100%;
+  }
+
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(26,86,219,.15);
+  }
+
+  /* ── Salary row ── */
+  .salary-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: end;
+  }
+
+  .salary-row select { width: auto; }
+
+  /* ── Button ── */
+  .btn-calc {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+
+  .btn-calc:hover { background: var(--primary-dark); }
+  .btn-calc:active { transform: scale(.99); }
+
+  /* ── Result ── */
+  .result {
+    display: none;
+    margin-top: 24px;
+    background: var(--success-bg);
+    border: 1.5px solid #84e1bc;
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .result.show { display: block; }
+
+  .result-title {
+    font-size: .8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--success);
+    margin-bottom: 10px;
+  }
+
+  .result-amount {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--success);
+    letter-spacing: -.03em;
+  }
+
+  .result-breakdown {
+    margin-top: 14px;
+    border-top: 1px solid #84e1bc;
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: .825rem;
+  }
+
+  .breakdown-row .lbl { color: var(--text-muted); }
+  .breakdown-row .val { font-weight: 600; color: var(--text); }
+
+  .breakdown-row.highlight .val { color: var(--success); font-size: .95rem; }
+
+  /* ── Warning tope ── */
+  .tope-warning {
+    display: none;
+    margin-top: 10px;
+    background: var(--warning-bg);
+    border: 1px solid #f6d860;
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    font-size: .78rem;
+    color: var(--warning);
+  }
+
+  .tope-warning.show { display: block; }
+
+  /* ── Legal note ── */
+  .legal-note {
+    margin-top: 16px;
+    font-size: .72rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── Error ── */
+  .error-msg {
+    display: none;
+    margin-top: 12px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: .825rem;
+    color: #b91c1c;
+  }
+
+  .error-msg.show { display: block; }
+
+  /* ── Responsive ── */
+  @media (max-width: 500px) {
+    .card-header, .card-body { padding: 18px 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <h1>Calculadora de Indemnizaciones Laborales</h1>
+    <p>Estimación orientativa según el Estatuto de los Trabajadores (España)</p>
+  </div>
+  <div class="card-body">
+
+    <!-- Tabs -->
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-type="improcedente" role="tab">Despido improcedente</button>
+      <button class="tab-btn" data-type="objetivo" role="tab">Despido objetivo</button>
+      <button class="tab-btn" data-type="temporal" role="tab">Fin contrato temporal</button>
+      <button class="tab-btn" data-type="art50" role="tab">Art. 50 ET / MSCT</button>
+      <button class="tab-btn" data-type="altodirectivo" role="tab">Alto directivo</button>
+    </div>
+
+    <!-- Info boxes -->
+    <div class="info-box" id="info-improcedente">
+      <strong>Despido improcedente (art. 56 ET):</strong> 33 días de salario por año desde el 12/02/2012 (máx. 24 mensualidades). Periodos anteriores a esa fecha se calculan a 45 días/año (máx. 42 mensualidades).
+    </div>
+    <div class="info-box" id="info-objetivo" style="display:none">
+      <strong>Despido por causas objetivas (art. 53 ET):</strong> 20 días de salario por año trabajado, con un máximo de 12 mensualidades.
+    </div>
+    <div class="info-box" id="info-temporal" style="display:none">
+      <strong>Fin de contrato temporal (art. 49.1.c ET):</strong> 12 días de salario por año trabajado (tasa vigente desde 2015).
+    </div>
+    <div class="info-box" id="info-art50" style="display:none">
+      <strong>Extinción por voluntad del trabajador — art. 50 ET / MSCT:</strong> Misma indemnización que el despido improcedente: 33 días/año (máx. 24 mensualidades).
+    </div>
+    <div class="info-box" id="info-altodirectivo" style="display:none">
+      <strong>Alto directivo (RD 1382/1985):</strong> Desistimiento del empresario sin pacto → 7 días/año (máx. 6 mens.). Despido improcedente sin pacto → 20 días/año (máx. 12 mens.). Si existe pacto contractual, prevalece lo acordado.
+    </div>
+
+    <!-- Form -->
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="fechaInicio">Fecha de inicio del contrato</label>
+        <input type="date" id="fechaInicio">
+      </div>
+      <div class="form-group">
+        <label for="fechaFin">Fecha de extinción del contrato</label>
+        <input type="date" id="fechaFin">
+      </div>
+
+      <div class="form-group full">
+        <label for="salario">Salario bruto anual <span class="hint">(incluye prorrata de pagas)</span></label>
+        <div class="salary-row">
+          <input type="number" id="salario" placeholder="0,00" min="0" step="0.01">
+          <select id="periodoSalario">
+            <option value="anual">€ / año</option>
+            <option value="mensual">€ / mes</option>
+            <option value="diario">€ / día</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Campo específico alto directivo -->
+      <div class="form-group full" id="grupo-altodirectivo" style="display:none">
+        <label for="tipoAD">Tipo de extinción (alto directivo)</label>
+        <select id="tipoAD">
+          <option value="desistimiento">Desistimiento del empresario</option>
+          <option value="improcedente">Despido improcedente</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-calc" id="btnCalc">Calcular indemnización</button>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- Result -->
+    <div class="result" id="result">
+      <div class="result-title">Indemnización estimada</div>
+      <div class="result-amount" id="resultAmount">0,00 €</div>
+      <div class="result-breakdown" id="resultBreakdown"></div>
+      <div class="tope-warning" id="topeWarning">
+        ⚠️ Se ha aplicado el tope legal máximo establecido por el ET.
+      </div>
+    </div>
+
+    <p class="legal-note">
+      * Cálculo orientativo. No constituye asesoramiento jurídico. Para fracciones de año se computan días exactos. Los importes no incluyen intereses ni otros conceptos (salarios de tramitación, vacaciones pendientes, etc.).
+    </p>
+
+  </div><!-- /card-body -->
+</div><!-- /card -->
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Estado ──────────────────────────────────────────────
+  let tipoActivo = 'improcedente';
+
+  // ── Tabs ────────────────────────────────────────────────
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      tipoActivo = btn.dataset.type;
+
+      // Info boxes
+      ['improcedente','objetivo','temporal','art50','altodirectivo'].forEach(t => {
+        document.getElementById('info-' + t).style.display = t === tipoActivo ? '' : 'none';
+      });
+
+      // Campo alto directivo
+      document.getElementById('grupo-altodirectivo').style.display =
+        tipoActivo === 'altodirectivo' ? '' : 'none';
+
+      ocultarResultado();
+    });
+  });
+
+  // ── Helpers ─────────────────────────────────────────────
+  const REFORM_DATE = new Date('2012-02-12'); // Reforma laboral
+
+  function diffDays(d1, d2) {
+    return Math.round((d2 - d1) / 86400000);
+  }
+
+  function fmt(n) {
+    return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  }
+
+  function fmtAnios(days) {
+    const anios = Math.floor(days / 365);
+    const resto = days % 365;
+    if (anios === 0) return resto + ' días';
+    if (resto === 0) return anios + (anios === 1 ? ' año' : ' años');
+    return anios + (anios === 1 ? ' año' : ' años') + ' y ' + resto + ' días';
+  }
+
+  function salarioDiario() {
+    const val = parseFloat(document.getElementById('salario').value);
+    if (!val || val <= 0) return null;
+    const periodo = document.getElementById('periodoSalario').value;
+    if (periodo === 'anual')   return val / 365;
+    if (periodo === 'mensual') return (val * 12) / 365;
+    return val; // diario
+  }
+
+  function ocultarResultado() {
+    document.getElementById('result').classList.remove('show');
+    document.getElementById('errorMsg').classList.remove('show');
+  }
+
+  function mostrarError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.classList.add('show');
+    document.getElementById('result').classList.remove('show');
+  }
+
+  // ── Calcular ─────────────────────────────────────────────
+  document.getElementById('btnCalc').addEventListener('click', calcular);
+
+  function calcular() {
+    document.getElementById('errorMsg').classList.remove('show');
+    document.getElementById('result').classList.remove('show');
+    document.getElementById('topeWarning').classList.remove('show');
+
+    const inicio = new Date(document.getElementById('fechaInicio').value);
+    const fin    = new Date(document.getElementById('fechaFin').value);
+
+    if (!document.getElementById('fechaInicio').value ||
+        !document.getElementById('fechaFin').value) {
+      return mostrarError('Por favor, introduce las fechas de inicio y fin del contrato.');
+    }
+    if (isNaN(inicio) || isNaN(fin)) {
+      return mostrarError('Las fechas introducidas no son válidas.');
+    }
+    if (fin <= inicio) {
+      return mostrarError('La fecha de extinción debe ser posterior a la de inicio.');
+    }
+
+    const diarSal = salarioDiario();
+    if (!diarSal) return mostrarError('Introduce un salario válido mayor que 0.');
+
+    const salAnual = diarSal * 365;
+
+    let resultado;
+    switch (tipoActivo) {
+      case 'improcedente': resultado = calcImprocedente(inicio, fin, diarSal, salAnual); break;
+      case 'objetivo':     resultado = calcObjetivo(inicio, fin, diarSal, salAnual);     break;
+      case 'temporal':     resultado = calcTemporal(inicio, fin, diarSal, salAnual);     break;
+      case 'art50':        resultado = calcArt50(inicio, fin, diarSal, salAnual);        break;
+      case 'altodirectivo':resultado = calcAltoDirectivo(inicio, fin, diarSal, salAnual);break;
+    }
+
+    mostrarResultado(resultado);
+  }
+
+  // ────────────────────────────────────────────────────────
+  // DESPIDO IMPROCEDENTE
+  // ────────────────────────────────────────────────────────
+  function calcImprocedente(inicio, fin, diarSal, salAnual) {
+    let indPre = 0, indPost = 0, diasPre = 0, diasPost = 0;
+    let topeAplicado = false;
+    const lines = [];
+
+    // Periodo PRE-reforma (antes del 12/02/2012)
+    if (inicio < REFORM_DATE) {
+      const finPre = fin < REFORM_DATE ? fin : REFORM_DATE;
+      diasPre = diffDays(inicio, finPre);
+      const topePre = salAnual * 42 / 12; // 42 mensualidades
+      const bruto = diasPre * 45 / 365 * diarSal * 365;
+      // 45 días por año: indemnización = (días trabajados / 365) * 45 * salario_diario
+      const bruto2 = (diasPre / 365) * 45 * diarSal;
+      indPre = Math.min(bruto2, topePre);
+      if (bruto2 > topePre) topeAplicado = true;
+      lines.push({ lbl: 'Período pre-reforma (45 días/año)', val: fmtAnios(diasPre) });
+      lines.push({ lbl: 'Indemnización pre-reforma', val: fmt(indPre) });
+    }
+
+    // Periodo POST-reforma (desde 12/02/2012)
+    if (fin > REFORM_DATE) {
+      const inicioPost = inicio > REFORM_DATE ? inicio : REFORM_DATE;
+      diasPost = diffDays(inicioPost, fin);
+      const topePost = salAnual * 24 / 12; // 24 mensualidades
+      const bruto = (diasPost / 365) * 33 * diarSal;
+      indPost = Math.min(bruto, topePost);
+      if (bruto > topePost) topeAplicado = true;
+      lines.push({ lbl: 'Período post-reforma (33 días/año)', val: fmtAnios(diasPost) });
+      lines.push({ lbl: 'Indemnización post-reforma', val: fmt(indPost) });
+    }
+
+    const total = indPre + indPost;
+    const totalDias = diasPre + diasPost;
+
+    lines.push({ lbl: 'Salario diario', val: fmt(diarSal) });
+    lines.push({ lbl: 'Antigüedad total', val: fmtAnios(totalDias), highlight: false });
+
+    return { total, lines, topeAplicado };
+  }
+
+  // ────────────────────────────────────────────────────────
+  // DESPIDO OBJETIVO
+  // ────────────────────────────────────────────────────────
+  function calcObjetivo(inicio, fin, diarSal, salAnual) {
+    const dias = diffDays(inicio, fin);
+    const tope = salAnual; // 12 mensualidades = 1 año
+    const bruto = (dias / 365) * 20 * diarSal;
+    const total = Math.min(bruto, tope);
+    const topeAplicado = bruto > tope;
+    return {
+      total,
+      topeAplicado,
+      lines: [
+        { lbl: 'Antigüedad', val: fmtAnios(dias) },
+        { lbl: 'Salario diario', val: fmt(diarSal) },
+        { lbl: 'Días de indemnización por año', val: '20 días' },
+        { lbl: 'Tope máximo', val: '12 mensualidades' },
+      ]
+    };
+  }
+
+  // ────────────────────────────────────────────────────────
+  // FIN CONTRATO TEMPORAL
+  // ────────────────────────────────────────────────────────
+  function calcTemporal(inicio, fin, diarSal, salAnual) {
+    const dias = diffDays(inicio, fin);
+    const bruto = (dias / 365) * 12 * diarSal;
+    return {
+      total: bruto,
+      topeAplicado: false,
+      lines: [
+        { lbl: 'Antigüedad', val: fmtAnios(dias) },
+        { lbl: 'Salario diario', val: fmt(diarSal) },
+        { lbl: 'Días de indemnización por año', val: '12 días' },
+      ]
+    };
+  }
+
+  // ────────────────────────────────────────────────────────
+  // ART. 50 ET / MSCT
+  // ────────────────────────────────────────────────────────
+  function calcArt50(inicio, fin, diarSal, salAnual) {
+    // Misma fórmula que improcedente
+    return calcImprocedente(inicio, fin, diarSal, salAnual);
+  }
+
+  // ────────────────────────────────────────────────────────
+  // ALTO DIRECTIVO
+  // ────────────────────────────────────────────────────────
+  function calcAltoDirectivo(inicio, fin, diarSal, salAnual) {
+    const dias = diffDays(inicio, fin);
+    const tipo = document.getElementById('tipoAD').value;
+
+    let diasIndAno, topeMsg, topeMens;
+    if (tipo === 'desistimiento') {
+      diasIndAno = 7;
+      topeMens   = 6;
+      topeMsg    = '6 mensualidades';
+    } else {
+      diasIndAno = 20;
+      topeMens   = 12;
+      topeMsg    = '12 mensualidades';
+    }
+
+    const tope  = salAnual * topeMens / 12;
+    const bruto = (dias / 365) * diasIndAno * diarSal;
+    const total = Math.min(bruto, tope);
+    const topeAplicado = bruto > tope;
+
+    return {
+      total,
+      topeAplicado,
+      lines: [
+        { lbl: 'Antigüedad', val: fmtAnios(dias) },
+        { lbl: 'Salario diario', val: fmt(diarSal) },
+        { lbl: 'Días de indemnización por año', val: diasIndAno + ' días' },
+        { lbl: 'Tope máximo', val: topeMsg },
+      ]
+    };
+  }
+
+  // ────────────────────────────────────────────────────────
+  // MOSTRAR RESULTADO
+  // ────────────────────────────────────────────────────────
+  function mostrarResultado({ total, lines, topeAplicado }) {
+    document.getElementById('resultAmount').textContent = fmt(total);
+
+    const bd = document.getElementById('resultBreakdown');
+    bd.innerHTML = '';
+    lines.forEach(({ lbl, val }) => {
+      const row = document.createElement('div');
+      row.className = 'breakdown-row';
+      row.innerHTML = `<span class="lbl">${lbl}</span><span class="val">${val}</span>`;
+      bd.appendChild(row);
+    });
+
+    if (topeAplicado) {
+      document.getElementById('topeWarning').classList.add('show');
+    }
+
+    document.getElementById('result').classList.add('show');
+  }
+
+})();
+</script>
+</body>
+</html>
