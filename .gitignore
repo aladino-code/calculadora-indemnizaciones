@@ -1,0 +1,5 @@
+# Ignorar archivos y carpetas sensibles o generados automáticamente
+.claude/settings.local.json
+__pycache__/
+*.log
+*.tmp

@@ -1,0 +1,289 @@
+<!-- Calculadora de Indemnizaciones Laborales - ES/EN - Shadow DOM aislado -->
+<div id="calcIndem"></div>
+<script>
+(function(){
+function ciInit(){ try {
+  var host = document.getElementById('calcIndem');
+  if (!host || host.getAttribute('data-ci-init') === '1') return;
+  host.setAttribute('data-ci-init', '1');
+
+  // Shadow DOM: aislamiento total de estilos y DOM (no afecta a videos, forms u otros modulos de HubSpot)
+  var shadow = null;
+  try { shadow = host.attachShadow({mode:'open'}); } catch(e){}
+  var root = shadow || host;
+
+  var CSS = [
+    ':host{all:initial;display:block;font-family:"Segoe UI",system-ui,-apple-system,sans-serif}',
+    '*{box-sizing:border-box;margin:0;padding:0}',
+    '.wrap{background:#fff;border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.08);width:100%;max-width:820px;margin:0 auto;overflow:hidden;color:#2c2c2c;line-height:1.4;font-family:"Segoe UI",system-ui,-apple-system,sans-serif}',
+    '.head{background:#1a3c5e;color:#fff;padding:16px 24px;display:flex;align-items:center;gap:12px}',
+    '.head svg{width:28px;height:28px;flex-shrink:0}',
+    '.ttl-box{flex:1}',
+    '.ttl{font-size:16px;font-weight:600;letter-spacing:.3px;margin:0;color:#fff}',
+    '.sub{font-size:11px;opacity:.75;margin:2px 0 0}',
+    '.lang{display:flex;gap:4px;flex-shrink:0}',
+    '.lbtn{background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.3);border-radius:4px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:all .2s}',
+    '.lbtn:hover{background:rgba(255,255,255,.25)}',
+    '.lon{background:#c8a45a;border-color:#c8a45a;color:#1a3c5e}',
+    '.body{padding:20px 24px}',
+    '.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}',
+    '.full{grid-template-columns:1fr}',
+    '.lab{display:block;font-size:11.5px;font-weight:600;color:#1a3c5e;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}',
+    '.hint{font-weight:400;text-transform:none;font-size:10px}',
+    '.sel,.inp{width:100%;padding:9px 12px;border:1.5px solid #e2e0db;border-radius:6px;font-size:14px;font-family:inherit;color:#2c2c2c;background:#fff;transition:border .2s}',
+    '.sel:focus,.inp:focus{outline:none;border-color:#c8a45a}',
+    '.sel{cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%236b7280\' stroke-width=\'2\'%3E%3Cpath d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}',
+    '.info{background:#f0f4f8;border-left:3px solid #c8a45a;padding:8px 12px;border-radius:0 6px 6px 0;font-size:11.5px;color:#6b7280;line-height:1.5;margin-bottom:12px;display:none}',
+    '.info.on{display:block}',
+    '.calc{width:100%;padding:12px;background:#1a3c5e;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:.3px;font-family:inherit;transition:background .2s}',
+    '.calc:hover{background:#24507a}',
+    '.res{display:none;margin-top:16px;border-top:1.5px solid #e2e0db;padding-top:16px}',
+    '.res.on{display:block}',
+    '.rgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}',
+    '.rc{background:#f7f5f0;border-radius:8px;padding:12px;text-align:center}',
+    '.rm{background:#1a3c5e;color:#fff;grid-column:1/-1}',
+    '.amt{font-size:22px;font-weight:700}',
+    '.rm .amt{font-size:28px}',
+    '.rl{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;opacity:.7;margin-top:2px}',
+    '.rdet{font-size:11.5px;color:#6b7280;line-height:1.6;padding:8px 12px;background:#fafaf8;border-radius:6px}',
+    '.rdet strong{color:#2c2c2c}',
+    '.cta{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}',
+    '.btc{padding:10px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;border:none;font-family:inherit;transition:all .2s;display:block}',
+    '.bp{background:#c8a45a;color:#1a3c5e}',
+    '.bp:hover{background:#b8943f}',
+    '.bs{background:transparent;border:1.5px solid #1a3c5e;color:#1a3c5e}',
+    '.bs:hover{background:#1a3c5e;color:#fff}',
+    '.foot{text-align:center;padding:10px;font-size:10px;color:#6b7280;border-top:1px solid #e2e0db}',
+    '@media(max-width:600px){.row{grid-template-columns:1fr}.rgrid{grid-template-columns:1fr}.rm{grid-column:auto}.cta{grid-template-columns:1fr}.body{padding:14px 16px}}'
+  ].join('');
+
+  var HTML =
+    '<div class="wrap">'
+    + '<div class="head">'
+    +   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/><circle cx="12" cy="12" r="5"/></svg>'
+    +   '<div class="ttl-box"><h2 class="ttl" data-i="title"></h2><p class="sub" data-i="subtitle"></p></div>'
+    +   '<div class="lang"><button id="lES" class="lbtn">ES</button><button id="lEN" class="lbtn lon">EN</button></div>'
+    + '</div>'
+    + '<div class="body">'
+    +   '<div class="row full"><div><label class="lab" data-i="lbl_tipo"></label>'
+    +     '<select id="tipo" class="sel">'
+    +       '<option value="" data-i="opt_select"></option>'
+    +       '<optgroup id="gD"><option value="improcedente" data-i="opt_improcedente"></option><option value="objetivo" data-i="opt_objetivo"></option><option value="colectivo" data-i="opt_colectivo"></option><option value="disciplinario" data-i="opt_disciplinario"></option></optgroup>'
+    +       '<optgroup id="gV"><option value="art50" data-i="opt_art50"></option><option value="msct" data-i="opt_msct"></option><option value="movilidad" data-i="opt_movilidad"></option></optgroup>'
+    +       '<optgroup id="gC"><option value="temporal" data-i="opt_temporal"></option></optgroup>'
+    +       '<optgroup id="gH"><option value="hogar_desistimiento" data-i="opt_hogar_desist"></option><option value="hogar_despido" data-i="opt_hogar_despido"></option></optgroup>'
+    +       '<optgroup id="gA"><option value="alto_desistimiento" data-i="opt_alto_desist"></option><option value="alto_despido" data-i="opt_alto_despido"></option></optgroup>'
+    +     '</select>'
+    +   '</div></div>'
+    +   '<div id="info" class="info"></div>'
+    +   '<div class="row full"><div><label class="lab"><span data-i="lbl_salario"></span> <span class="hint" data-i="lbl_salario_hint"></span></label><input type="number" id="sal" class="inp" step="0.01" min="0" data-ph="ph_salario"></div></div>'
+    +   '<div class="row"><div><label class="lab" data-i="lbl_fecha_inicio"></label><input type="date" id="fi" class="inp"></div><div><label class="lab" data-i="lbl_fecha_fin"></label><input type="date" id="ff" class="inp"></div></div>'
+    +   '<div class="row" id="pactoR" style="display:none"><div><label class="lab"><span data-i="lbl_pactado"></span> <span class="hint" data-i="lbl_pactado_hint"></span></label><input type="number" id="pac" class="inp" step="0.01" min="0" data-ph="ph_pactado"></div><div></div></div>'
+    +   '<button id="btnCalc" class="calc" data-i="btn_calcular"></button>'
+    +   '<div class="res" id="res">'
+    +     '<div class="rgrid">'
+    +       '<div class="rc rm"><div class="amt" id="rT">0,00 &euro;</div><div class="rl" data-i="res_estimada"></div></div>'
+    +       '<div class="rc"><div class="amt" id="rD">0</div><div class="rl" data-i="res_dias"></div></div>'
+    +       '<div class="rc"><div class="amt" id="rA">0,00</div><div class="rl" data-i="res_antig"></div></div>'
+    +       '<div class="rc"><div class="amt" id="rTp">--</div><div class="rl" data-i="res_tope"></div></div>'
+    +     '</div>'
+    +     '<div class="rdet" id="rDet"></div>'
+    +     '<div class="cta"><a id="lnkAb" class="btc bp" href="https://www.conesalegal.com/es/contacto-abogado-laboralista-barcelona" target="_blank" rel="noopener" data-i="btn_abogado"></a><button id="btnPr" class="btc bs" data-i="btn_imprimir"></button></div>'
+    +   '</div>'
+    + '</div>'
+    + '<div class="foot" data-i="footer"></div>'
+    + '</div>';
+
+  root.innerHTML = '<style>' + CSS + '</style>' + HTML;
+
+  var $ = function(id){ return root.querySelector('#' + id); };
+  var $$ = function(sel){ return root.querySelectorAll(sel); };
+
+  var T = {
+    es: {
+      title:'Calculadora de Indemnizaciones Laborales',
+      subtitle:'Calcula tu indemnizaci\u00f3n seg\u00fan la legislaci\u00f3n laboral vigente',
+      lbl_tipo:'Tipo de extinci\u00f3n / indemnizaci\u00f3n',opt_select:'-- Selecciona --',
+      grp_despido:'Despido',grp_voluntad:'Extinci\u00f3n por voluntad del trabajador',grp_contrato:'Fin de contrato',grp_hogar:'Empleados del hogar',grp_alto:'Altos directivos (RD 1382/1985)',
+      opt_improcedente:'Despido improcedente',opt_objetivo:'Despido objetivo procedente',opt_colectivo:'Despido colectivo (ERE)',opt_disciplinario:'Despido disciplinario procedente',
+      opt_art50:'Extinci\u00f3n judicial art. 50 ET',opt_msct:'Modificaci\u00f3n sustancial de condiciones (art. 41)',opt_movilidad:'Movilidad geogr\u00e1fica (art. 40)',
+      opt_temporal:'Fin de contrato temporal',opt_hogar_desist:'Hogar: desistimiento del empleador',opt_hogar_despido:'Hogar: despido improcedente',
+      opt_alto_desist:'Alto directivo: desistimiento',opt_alto_despido:'Alto directivo: despido improcedente',
+      lbl_salario:'Salario bruto anual (\u20AC)',lbl_salario_hint:'(incluyendo bonus, incentivos, variables, retribuci\u00f3n en especie y horas extras de los \u00faltimos 12 meses)',
+      ph_salario:'Ej: 30000',lbl_fecha_inicio:'Fecha de inicio de la relaci\u00f3n laboral',lbl_fecha_fin:'Fecha de extinci\u00f3n',
+      lbl_pactado:'Indemnizaci\u00f3n pactada (\u20AC)',lbl_pactado_hint:'(si existe pacto)',ph_pactado:'Dejar vac\u00edo si no hay pacto',
+      btn_calcular:'Calcular indemnizaci\u00f3n',res_estimada:'Indemnizaci\u00f3n estimada',res_dias:'D\u00edas/a\u00f1o',res_antig:'A\u00f1os antig\u00fcedad',res_tope:'Tope legal',
+      btn_abogado:'Consultar a abogado laboralista',btn_imprimir:'Imprimir resultado',
+      footer:'Esta herramienta es orientativa y no constituye asesoramiento jur\u00eddico. Consulte con un profesional.',
+      alert_tipo:'Selecciona el tipo de extinci\u00f3n.',alert_salario:'Introduce un salario bruto anual v\u00e1lido.',alert_fechas:'Introduce las fechas.',alert_orden:'La fecha de extinci\u00f3n debe ser posterior a la de inicio.',
+      meses:'meses',sin_tope:'Sin tope',min_6:'M\u00edn. 6 meses',
+      info_improcedente:'Desde 12/02/2012: 33 d\u00edas/a\u00f1o (m\u00e1x. 24 mensualidades). Periodo anterior: 45 d\u00edas/a\u00f1o (m\u00e1x. 42 mensualidades). Se suman ambos tramos.',
+      info_objetivo:'20 d\u00edas de salario por a\u00f1o trabajado, con un m\u00e1ximo de 12 mensualidades.',
+      info_colectivo:'20 d\u00edas de salario por a\u00f1o trabajado, con un m\u00e1ximo de 12 mensualidades (m\u00ednimo legal, puede ser superior por negociaci\u00f3n).',
+      info_disciplinario:'El despido disciplinario procedente NO genera derecho a indemnizaci\u00f3n.',
+      info_art50:'La indemnizaci\u00f3n es la misma que por despido improcedente: 33 d\u00edas/a\u00f1o (m\u00e1x. 24 meses) + tramo anterior a 12/02/2012 a 45 d\u00edas/a\u00f1o.',
+      info_msct:'Modificaci\u00f3n sustancial de condiciones (art. 41 ET): 20 d\u00edas/a\u00f1o, m\u00e1ximo 9 mensualidades.',
+      info_movilidad:'Traslado con cambio de residencia (art. 40 ET): 20 d\u00edas/a\u00f1o, m\u00e1ximo 12 mensualidades.',
+      info_temporal:'Fin de contrato temporal (contratos desde 01/01/2015): 12 d\u00edas de salario por a\u00f1o de servicio.',
+      info_hogar_desistimiento:'Desistimiento del empleador del hogar: 12 d\u00edas/a\u00f1o, m\u00e1ximo 6 mensualidades (RDL 16/2022).',
+      info_hogar_despido:'Despido improcedente empleado del hogar (desde junio 2022): misma indemnizaci\u00f3n que r\u00e9gimen general improcedente (33 d\u00edas/a\u00f1o, m\u00e1x. 24 meses + tramo pre-2012).',
+      info_alto_desistimiento:'Desistimiento empresarial alto directivo (RD 1382/1985): 7 d\u00edas/a\u00f1o, m\u00ednimo 6 mensualidades. Puede existir pacto superior.',
+      info_alto_despido:'Despido improcedente alto directivo: 20 d\u00edas/a\u00f1o, m\u00e1ximo 12 mensualidades. Puede haber indemnizaci\u00f3n pactada superior.',
+      det_disciplinario:'<strong>Despido disciplinario procedente:</strong> no genera indemnizaci\u00f3n. Si se declara improcedente, selecciona "Despido improcedente".',
+      det_desglose:'<strong>Desglose:</strong> ',det_pre:'Tramo pre-reforma (45 d/a\u00f1o): ',det_post:'Tramo post-reforma (33 d/a\u00f1o): ',det_anios:' a\u00f1os = ',
+      det_alto_desist:'<strong>Alto directivo - desistimiento:</strong> 7 d\u00edas/a\u00f1o con m\u00ednimo de 6 mensualidades (',
+      det_alto_desp:'<strong>Alto directivo - despido improcedente:</strong> 20 d\u00edas/a\u00f1o, m\u00e1x. 12 mensualidades (',
+      det_pacto:' Pacto aplicado: ',det_dias:' d\u00edas/a\u00f1o</strong> \u00d7 ',det_x_anios:' a\u00f1os \u00d7 ',det_dia:'/d\u00eda = ',det_tope:' (tope: '
+    },
+    en: {
+      title:'Employment Severance Calculator',subtitle:'Calculate your severance pay under current Spanish labour law',
+      lbl_tipo:'Type of termination / severance',opt_select:'-- Select --',
+      grp_despido:'Dismissal',grp_voluntad:'Termination by employee\u2019s will',grp_contrato:'End of contract',grp_hogar:'Domestic workers',grp_alto:'Senior executives (RD 1382/1985)',
+      opt_improcedente:'Unfair dismissal',opt_objetivo:'Fair objective dismissal',opt_colectivo:'Collective dismissal (ERE)',opt_disciplinario:'Fair disciplinary dismissal',
+      opt_art50:'Judicial termination art. 50 ET',opt_msct:'Substantial change of conditions (art. 41)',opt_movilidad:'Geographical relocation (art. 40)',
+      opt_temporal:'End of temporary contract',opt_hogar_desist:'Domestic: employer withdrawal',opt_hogar_despido:'Domestic: unfair dismissal',
+      opt_alto_desist:'Senior executive: employer withdrawal',opt_alto_despido:'Senior executive: unfair dismissal',
+      lbl_salario:'Gross annual salary (\u20AC)',lbl_salario_hint:'(including bonuses, incentives, variable pay, benefits in kind and overtime from the last 12 months)',
+      ph_salario:'E.g.: 30000',lbl_fecha_inicio:'Employment start date',lbl_fecha_fin:'Termination date',
+      lbl_pactado:'Agreed severance (\u20AC)',lbl_pactado_hint:'(if there is an agreement)',ph_pactado:'Leave empty if no agreement',
+      btn_calcular:'Calculate severance',res_estimada:'Estimated severance',res_dias:'Days/year',res_antig:'Years of service',res_tope:'Legal cap',
+      btn_abogado:'Consult a labour lawyer',btn_imprimir:'Print result',
+      footer:'This tool is for guidance only and does not constitute legal advice. Please consult a professional.',
+      alert_tipo:'Please select the type of termination.',alert_salario:'Please enter a valid gross annual salary.',alert_fechas:'Please enter both dates.',alert_orden:'The termination date must be after the start date.',
+      meses:'months',sin_tope:'No cap',min_6:'Min. 6 months',
+      info_improcedente:'From 12/02/2012: 33 days/year (max. 24 monthly salaries). Prior period: 45 days/year (max. 42 monthly salaries). Both periods are added together.',
+      info_objetivo:'20 days\u2019 salary per year of service, capped at 12 monthly salaries.',
+      info_colectivo:'20 days\u2019 salary per year of service, capped at 12 monthly salaries (statutory minimum; may be higher through negotiation).',
+      info_disciplinario:'A fair disciplinary dismissal does NOT entitle the employee to severance pay.',
+      info_art50:'Severance is the same as for unfair dismissal: 33 days/year (max. 24 months) + pre-12/02/2012 period at 45 days/year.',
+      info_msct:'Substantial change of working conditions (art. 41 ET): 20 days/year, max. 9 monthly salaries.',
+      info_movilidad:'Relocation requiring change of residence (art. 40 ET): 20 days/year, max. 12 monthly salaries.',
+      info_temporal:'End of temporary contract (contracts from 01/01/2015): 12 days\u2019 salary per year of service.',
+      info_hogar_desistimiento:'Domestic employer withdrawal: 12 days/year, max. 6 monthly salaries (RDL 16/2022).',
+      info_hogar_despido:'Unfair dismissal of domestic worker (since June 2022): same severance as general unfair dismissal (33 days/year, max. 24 months + pre-2012 period).',
+      info_alto_desistimiento:'Senior executive employer withdrawal (RD 1382/1985): 7 days/year, minimum 6 monthly salaries. A higher amount may be agreed.',
+      info_alto_despido:'Senior executive unfair dismissal: 20 days/year, max. 12 monthly salaries. A higher agreed amount may apply.',
+      det_disciplinario:'<strong>Fair disciplinary dismissal:</strong> no severance pay. If declared unfair, select "Unfair dismissal".',
+      det_desglose:'<strong>Breakdown:</strong> ',det_pre:'Pre-reform period (45 d/yr): ',det_post:'Post-reform period (33 d/yr): ',det_anios:' years = ',
+      det_alto_desist:'<strong>Senior exec. \u2013 withdrawal:</strong> 7 days/year with a minimum of 6 monthly salaries (',
+      det_alto_desp:'<strong>Senior exec. \u2013 unfair dismissal:</strong> 20 days/year, max. 12 monthly salaries (',
+      det_pacto:' Agreed amount applied: ',det_dias:' days/year</strong> \u00d7 ',det_x_anios:' years \u00d7 ',det_dia:'/day = ',det_tope:' (cap: '
+    }
+  };
+
+  var lang = 'en';
+
+  var REGLAS = {
+    improcedente:{infoKey:'info_improcedente',calc:'doble'},
+    objetivo:{infoKey:'info_objetivo',dias:20,tope:12},
+    colectivo:{infoKey:'info_colectivo',dias:20,tope:12},
+    disciplinario:{infoKey:'info_disciplinario',dias:0,tope:0},
+    art50:{infoKey:'info_art50',calc:'doble'},
+    msct:{infoKey:'info_msct',dias:20,tope:9},
+    movilidad:{infoKey:'info_movilidad',dias:20,tope:12},
+    temporal:{infoKey:'info_temporal',dias:12,tope:0},
+    hogar_desistimiento:{infoKey:'info_hogar_desistimiento',dias:12,tope:6},
+    hogar_despido:{infoKey:'info_hogar_despido',calc:'doble'},
+    alto_desistimiento:{infoKey:'info_alto_desistimiento',calc:'altoD'},
+    alto_despido:{infoKey:'info_alto_despido',calc:'altoI'}
+  };
+
+  var FR = new Date(2012, 1, 12);
+  function dy(a,b){ return (b-a)/(365.25*864e5); }
+  function fmt(n){ return n.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' \u20AC'; }
+
+  function apply(){
+    var d = T[lang];
+    var els = $$('[data-i]');
+    for (var i=0;i<els.length;i++){ var k = els[i].getAttribute('data-i'); if (d[k]!==undefined) els[i].textContent = d[k]; }
+    var phs = $$('[data-ph]');
+    for (var i=0;i<phs.length;i++){ var k = phs[i].getAttribute('data-ph'); if (d[k]!==undefined) phs[i].placeholder = d[k]; }
+    $('gD').label = d.grp_despido; $('gV').label = d.grp_voluntad; $('gC').label = d.grp_contrato; $('gH').label = d.grp_hogar; $('gA').label = d.grp_alto;
+    $('lES').classList.toggle('lon', lang==='es');
+    $('lEN').classList.toggle('lon', lang==='en');
+    onTipo();
+  }
+
+  function onTipo(){
+    var tipo = $('tipo').value;
+    var ib = $('info');
+    $('res').classList.remove('on');
+    if (tipo && REGLAS[tipo]) { ib.innerHTML = T[lang][REGLAS[tipo].infoKey]; ib.classList.add('on'); }
+    else { ib.classList.remove('on'); }
+    $('pactoR').style.display = (tipo==='alto_desistimiento' || tipo==='alto_despido') ? 'grid' : 'none';
+  }
+
+  function calcular(){
+    var L = T[lang];
+    var tipo = $('tipo').value;
+    var sa = parseFloat($('sal').value);
+    var fiS = $('fi').value, ffS = $('ff').value;
+    if (!tipo) return alert(L.alert_tipo);
+    if (isNaN(sa) || sa<=0) return alert(L.alert_salario);
+    if (!fiS || !ffS) return alert(L.alert_fechas);
+    var sd = sa/365, ini = new Date(fiS), fin = new Date(ffS);
+    if (fin<=ini) return alert(L.alert_orden);
+
+    var r = REGLAS[tipo], total, det, dL, aL, tL;
+
+    if (tipo==='disciplinario'){
+      total=0; dL='0'; aL=dy(ini,fin).toFixed(2); tL='--'; det=L.det_disciplinario;
+    } else if (r.calc==='doble'){
+      var sm=sd*30, t1=0, t2=0, a1=0, a2=0;
+      if (ini<FR){ var f1 = fin<FR?fin:FR; a1=dy(ini,f1); t1=sd*45*a1; if (t1>sm*42) t1=sm*42; }
+      if (fin>FR){ var i2 = ini>FR?ini:FR; a2=dy(i2,fin); t2=sd*33*a2; if (t2>sm*24) t2=sm*24; }
+      var tot=t1+t2, tp7=sd*720; if (tot>tp7 && t1<tp7) tot=tp7;
+      total=Math.max(tot,0); aL=(a1+a2).toFixed(2); tL='24 '+L.meses; dL='33/45';
+      var dd = L.det_desglose;
+      if (a1>0) dd += L.det_pre + a1.toFixed(2) + L.det_anios + fmt(t1) + '. ';
+      if (a2>0) dd += L.det_post + a2.toFixed(2) + L.det_anios + fmt(t2) + '.';
+      if (a1===0 && a2>0){ dL='33'; tL='24 '+L.meses; }
+      if (a1>0 && a2===0){ dL='45'; tL='42 '+L.meses; }
+      det = dd;
+    } else if (r.calc==='altoD'){
+      var a=dy(ini,fin), sm=sd*30, ind=sd*7*a, mn=sm*6;
+      if (ind<mn) ind=mn;
+      var p=parseFloat($('pac').value); if (!isNaN(p) && p>ind) ind=p;
+      total=ind; dL='7'; aL=a.toFixed(2); tL=L.min_6;
+      det = L.det_alto_desist + fmt(mn) + ').';
+      if (!isNaN(p) && p>0) det += L.det_pacto + fmt(p) + '.';
+    } else if (r.calc==='altoI'){
+      var a=dy(ini,fin), sm=sd*30, ind=sd*20*a, tp=sm*12;
+      if (ind>tp) ind=tp;
+      var p=parseFloat($('pac').value); if (!isNaN(p) && p>ind) ind=p;
+      total=ind; dL='20'; aL=a.toFixed(2); tL='12 '+L.meses;
+      det = L.det_alto_desp + fmt(tp) + ').';
+      if (!isNaN(p) && p>0) det += L.det_pacto + fmt(p) + '.';
+    } else {
+      var a=dy(ini,fin), sm=sd*30, ind=sd*r.dias*a, tp=r.tope>0?sm*r.tope:Infinity;
+      if (ind>tp) ind=tp;
+      total=Math.max(ind,0); dL=String(r.dias); aL=a.toFixed(2);
+      tL = r.tope>0 ? (r.tope+' '+L.meses) : L.sin_tope;
+      det = '<strong>' + r.dias + L.det_dias + a.toFixed(2) + L.det_x_anios + fmt(sd) + L.det_dia + fmt(total);
+      if (r.tope>0) det += L.det_tope + fmt(tp) + ')';
+    }
+
+    $('rT').textContent = fmt(total);
+    $('rD').textContent = dL;
+    $('rA').textContent = aL;
+    $('rTp').textContent = tL;
+    $('rDet').innerHTML = det;
+    $('res').classList.add('on');
+  }
+
+  $('lES').addEventListener('click', function(){ lang='es'; apply(); });
+  $('lEN').addEventListener('click', function(){ lang='en'; apply(); });
+  $('tipo').addEventListener('change', onTipo);
+  $('btnCalc').addEventListener('click', calcular);
+  $('btnPr').addEventListener('click', function(){ window.print(); });
+
+  try { $('ff').valueAsDate = new Date(); } catch(e){}
+  apply();
+} catch(e) { if (window.console && console.warn) console.warn('[calcIndem]', e); } }
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', ciInit);
+} else {
+  ciInit();
+}
+})();
+</script>
